@@ -3,8 +3,10 @@ import argparser
 import os
 from utils.logger import Logger
 
-from apex.parallel import DistributedDataParallel
-from apex import amp
+#from apex.parallel import DistributedDataParallel
+#from apex import amp
+from torch.parallel import DistributedDataParallel
+from torch.apex import amp
 from torch.utils.data.distributed import DistributedSampler
 
 import numpy as np
@@ -178,13 +180,6 @@ def main(opts):
     else:
         raise NotImplementedError
     logger.debug("Optimizer:\n%s" % optimizer)
-
-    if model_old is not None:
-        [model, model_old], optimizer = amp.initialize([model.to(device), model_old.to(device)], optimizer,
-                                                       opt_level=opts.opt_level)
-        model_old = DistributedDataParallel(model_old)
-    else:
-        model, optimizer = amp.initialize(model.to(device), optimizer, opt_level=opts.opt_level)
 
     # Put the model on GPU
     model = DistributedDataParallel(model, delay_allreduce=True)
