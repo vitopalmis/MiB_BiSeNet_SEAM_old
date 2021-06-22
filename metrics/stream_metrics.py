@@ -117,9 +117,9 @@ class StreamSegMetrics(_StreamMetrics):
         #torch.distributed.reduce(confusion_matrix, dst=0)
         #torch.distributed.reduce(samples, dst=0)
 
-        if torch.distributed.get_rank() == 0:
-            self.confusion_matrix = confusion_matrix.cpu().numpy()
-            self.total_samples = samples.cpu().numpy()
+        #if torch.distributed.get_rank() == 0:
+        self.confusion_matrix = confusion_matrix.cpu().numpy()
+        self.total_samples = samples.cpu().numpy()
 
     def confusion_matrix_to_fig(self):
         cm = self.confusion_matrix.astype('float') / (self.confusion_matrix.sum(axis=1)+0.000001)[:, np.newaxis]
