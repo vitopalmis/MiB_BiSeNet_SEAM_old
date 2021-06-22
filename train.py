@@ -138,8 +138,8 @@ class Trainer:
 
                 # xxx Regularizer (EWC, RW, PI)
                 if self.regularizer_flag:
-                    if distributed.get_rank() == 0:
-                        self.regularizer.update()
+                    #if distributed.get_rank() == 0:
+                    self.regularizer.update()
                     l_reg = self.reg_importance * self.regularizer.penalty()
                     if l_reg != 0.:
                         with amp.scale_loss(l_reg, optim) as scaled_loss:
@@ -175,9 +175,9 @@ class Trainer:
         # torch.distributed.reduce(epoch_loss, dst=0)
         # torch.distributed.reduce(reg_loss, dst=0)
 
-        if distributed.get_rank() == 0:
-            epoch_loss = epoch_loss / len(train_loader)  # / distributed.get_world_size()
-            reg_loss = reg_loss / len(train_loader)  # / distributed.get_world_size()
+        #if distributed.get_rank() == 0:
+        epoch_loss = epoch_loss / len(train_loader)  # / distributed.get_world_size()
+        reg_loss = reg_loss / len(train_loader)  # / distributed.get_world_size()
 
         logger.info(f"Epoch {cur_epoch}, Class Loss={epoch_loss}, Reg Loss={reg_loss}")
 
@@ -262,9 +262,9 @@ class Trainer:
             #torch.distributed.reduce(class_loss, dst=0)
             #torch.distributed.reduce(reg_loss, dst=0)
 
-            if distributed.get_rank() == 0:
-                class_loss = class_loss / len(loader)  # / distributed.get_world_size()
-                reg_loss = reg_loss / len(loader)  # / distributed.get_world_size()
+            #if distributed.get_rank() == 0:
+            class_loss = class_loss / len(loader)  # / distributed.get_world_size()
+            reg_loss = reg_loss / len(loader)  # / distributed.get_world_size()
 
             if logger is not None:
                 logger.info(f"Validation, Class Loss={class_loss}, Reg Loss={reg_loss} (without scaling)")
