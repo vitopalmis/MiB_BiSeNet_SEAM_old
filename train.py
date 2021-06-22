@@ -172,12 +172,12 @@ class Trainer:
         epoch_loss = torch.tensor(epoch_loss).to(self.device)
         reg_loss = torch.tensor(reg_loss).to(self.device)
 
-        torch.distributed.reduce(epoch_loss, dst=0)
-        torch.distributed.reduce(reg_loss, dst=0)
+        # torch.distributed.reduce(epoch_loss, dst=0)
+        # torch.distributed.reduce(reg_loss, dst=0)
 
         if distributed.get_rank() == 0:
-            epoch_loss = epoch_loss / distributed.get_world_size() / len(train_loader)
-            reg_loss = reg_loss / distributed.get_world_size() / len(train_loader)
+            epoch_loss = epoch_loss / len(train_loader)  # / distributed.get_world_size()
+            reg_loss = reg_loss / len(train_loader)  # / distributed.get_world_size()
 
         logger.info(f"Epoch {cur_epoch}, Class Loss={epoch_loss}, Reg Loss={reg_loss}")
 
@@ -259,12 +259,12 @@ class Trainer:
             class_loss = torch.tensor(class_loss).to(self.device)
             reg_loss = torch.tensor(reg_loss).to(self.device)
 
-            torch.distributed.reduce(class_loss, dst=0)
-            torch.distributed.reduce(reg_loss, dst=0)
+            #torch.distributed.reduce(class_loss, dst=0)
+            #torch.distributed.reduce(reg_loss, dst=0)
 
             if distributed.get_rank() == 0:
-                class_loss = class_loss / distributed.get_world_size() / len(loader)
-                reg_loss = reg_loss / distributed.get_world_size() / len(loader)
+                class_loss = class_loss / len(loader)  # / distributed.get_world_size()
+                reg_loss = reg_loss / len(loader)  # / distributed.get_world_size()
 
             if logger is not None:
                 logger.info(f"Validation, Class Loss={class_loss}, Reg Loss={reg_loss} (without scaling)")
