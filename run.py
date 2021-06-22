@@ -5,8 +5,8 @@ from utils.logger import Logger
 
 #from apex.parallel import DistributedDataParallel
 #from apex import amp
-from torch.parallel import DistributedDataParallel
-from torch.apex import amp
+#from torch.parallel import DistributedDataParallel
+from torch.cuda import amp
 from torch.utils.data.distributed import DistributedSampler
 
 import numpy as np
@@ -106,11 +106,14 @@ def get_dataset(opts):
 
 
 def main(opts):
-    distributed.init_process_group(backend='nccl', init_method='env://')
+    # Comment this lines for the parallelization:
+    # distributed.init_process_group(backend='nccl', init_method='env://')
     device_id, device = opts.local_rank, torch.device(opts.local_rank)
-    rank, world_size = distributed.get_rank(), distributed.get_world_size()
+    # rank, world_size = distributed.get_rank(), distributed.get_world_size()
     torch.cuda.set_device(device_id)
-
+    
+    rank = 0
+    
     # Initialize logging
     task_name = f"{opts.task}-{opts.dataset}"
     logdir_full = f"{opts.logdir}/{task_name}/{opts.name}/"
@@ -119,7 +122,7 @@ def main(opts):
     else:
         logger = Logger(logdir_full, rank=rank, debug=opts.debug, summary=False)
 
-    logger.print(f"Device: {device}")
+    #logger.print(f"Device: {device}")
 
     # Set up random seed
     torch.manual_seed(opts.random_seed)
@@ -133,14 +136,14 @@ def main(opts):
     random.seed(opts.random_seed)
 
     train_loader = data.DataLoader(train_dst, batch_size=opts.batch_size,
-                                   sampler=DistributedSampler(train_dst, num_replicas=world_size, rank=rank),
                                    num_workers=opts.num_workers, drop_last=True)
+                                   # sampler=DistributedSampler(train_dst, num_replicas=world_size, rank=rank),
     val_loader = data.DataLoader(val_dst, batch_size=opts.batch_size if opts.crop_val else 1,
-                                 sampler=DistributedSampler(val_dst, num_replicas=world_size, rank=rank),
                                  num_workers=opts.num_workers)
+                                 # sampler=DistributedSampler(val_dst, num_replicas=world_size, rank=rank),
     logger.info(f"Dataset: {opts.dataset}, Train set: {len(train_dst)}, Val set: {len(val_dst)},"
                 f" Test set: {len(test_dst)}, n_classes {n_classes}")
-    logger.info(f"Total batch size is {opts.batch_size * world_size}")
+    # logger.info(f"Total batch size is {opts.batch_size * world_size}")
 
     # xxx Set up model
     logger.info(f"Backbone: {opts.backbone}")
@@ -182,8 +185,10 @@ def main(opts):
     logger.debug("Optimizer:\n%s" % optimizer)
 
     # Put the model on GPU
-    model = DistributedDataParallel(model, delay_allreduce=True)
-
+    # Our modification:
+    # model = DistributedDataParallel(model, delay_allreduce=True)
+    model = model.cuda()
+    
     # xxx Load old model from old weights if step > 0!
     if opts.step > 0:
         # get model path
@@ -338,14 +343,16 @@ def main(opts):
     logger.info("*** Test the model on all seen classes...")
     # make data loader
     test_loader = data.DataLoader(test_dst, batch_size=opts.batch_size if opts.crop_val else 1,
-                                  sampler=DistributedSampler(test_dst, num_replicas=world_size, rank=rank),
                                   num_workers=opts.num_workers)
+                                  # sampler=DistributedSampler(test_dst, num_replicas=world_size, rank=rank),
 
     # load best model
     if TRAIN:
         model = make_model(opts, classes=tasks.get_per_task_classes(opts.dataset, opts.task, opts.step))
         # Put the model on GPU
-        model = DistributedDataParallel(model.cuda(device))
+        # Our modification to:
+        # model = DistributedDataParallel(model.cuda(device))
+        model = model.cuda(device)
         ckpt = f"checkpoints/step/{task_name}_{opts.name}_{opts.step}.pth"
         checkpoint = torch.load(ckpt, map_location="cpu")
         model.load_state_dict(checkpoint["model_state"])
