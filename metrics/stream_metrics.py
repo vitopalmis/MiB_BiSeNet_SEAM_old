@@ -114,8 +114,8 @@ class StreamSegMetrics(_StreamMetrics):
         confusion_matrix = torch.tensor(self.confusion_matrix).to(device)
         samples = torch.tensor(self.total_samples).to(device)
 
-        torch.distributed.reduce(confusion_matrix, dst=0)
-        torch.distributed.reduce(samples, dst=0)
+        #torch.distributed.reduce(confusion_matrix, dst=0)
+        #torch.distributed.reduce(samples, dst=0)
 
         if torch.distributed.get_rank() == 0:
             self.confusion_matrix = confusion_matrix.cpu().numpy()
