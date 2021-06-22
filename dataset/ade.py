@@ -237,8 +237,8 @@ class AdeSegmentationIncremental(data.Dataset):
                 idxs = np.load(idxs_path).tolist()
             else:
                 idxs = filter_images(full_data, labels, labels_old, overlap=overlap)
-                if idxs_path is not None and distributed.get_rank() == 0:
-                    np.save(idxs_path, np.array(idxs, dtype=int))
+                #if idxs_path is not None and distributed.get_rank() == 0:
+                #    np.save(idxs_path, np.array(idxs, dtype=int))
 
             if train:
                 masking_value = 0
