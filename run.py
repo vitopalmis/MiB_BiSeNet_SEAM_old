@@ -82,16 +82,18 @@ def get_dataset(opts):
     if not os.path.exists(path_base):
         os.makedirs(path_base, exist_ok=True)
 
+    # train dataset
     train_dst = dataset(root=opts.data_root, train=True, transform=train_transform,
                         labels=list(labels), labels_old=list(labels_old),
                         idxs_path=path_base + f"/train-{opts.step}.npy",
                         masking=not opts.no_mask, overlap=opts.overlap)
 
+    # split the dataset 80 / 20
     if not opts.no_cross_val:  # if opts.cross_val:
         train_len = int(0.8 * len(train_dst))
         val_len = len(train_dst)-train_len
         train_dst, val_dst = torch.utils.data.random_split(train_dst, [train_len, val_len])
-    else:  # don't use cross_val
+    else:  # don't use cross_val, take the validation set from the directory val-ecc ecc
         val_dst = dataset(root=opts.data_root, train=False, transform=val_transform,
                           labels=list(labels), labels_old=list(labels_old),
                           idxs_path=path_base + f"/val-{opts.step}.npy",
@@ -149,6 +151,8 @@ def main(opts):
     logger.info(f"Backbone: {opts.backbone}")
 
     step_checkpoint = None
+    
+    # initialize the model for the segmantation ( it will be a BiSeNet model )
     model = make_model(opts, classes=tasks.get_per_task_classes(opts.dataset, opts.task, opts.step))
     logger.info(f"[!] Model made with{'out' if opts.no_pretrained else ''} pre-trained")
 
