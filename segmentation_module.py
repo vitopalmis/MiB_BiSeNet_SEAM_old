@@ -9,7 +9,8 @@ from inplace_abn import InPlaceABNSync, InPlaceABN, ABN
 from functools import partial, reduce
 
 import models
-from modules import DeeplabV3
+# from modules import DeeplabV3
+from modules import BiSeNet, context_path
 
 
 def make_model(opts, classes=None):
@@ -22,8 +23,10 @@ def make_model(opts, classes=None):
     else:
         norm = nn.BatchNorm2d  # not synchronized, can be enabled with apex
     
+    '''
     # use a ResNet as backbone
     body = models.__dict__[f'net_{opts.backbone}'](norm_act=norm, output_stride=opts.output_stride)
+    '''
     '''
     if not opts.no_pretrained:
         pretrained_path = f'pretrained/{opts.backbone}_{opts.norm_act}.pth.tar'
@@ -34,14 +37,18 @@ def make_model(opts, classes=None):
         body.load_state_dict(pre_dict['state_dict'])
         del pre_dict  # free memory
     '''
-    
+    '''
     # Initialize the head, which is usefull for the segmentation task.
     # In our opinion, this head is positioned after the body:
     # ( it takes as input the output channels of the body )
     head_channels = 256
     head = DeeplabV3(body.out_channels, head_channels, 256, norm_act=norm,
                      out_stride=opts.output_stride, pooling_size=opts.pooling)
-
+    '''
+    
+    # we have to set the parameters:
+    bisenet = BiSeNet()
+    
     if classes is not None:
         model = IncrementalSegmentationModule(body, head, head_channels, classes=classes, fusion_mode=opts.fusion_mode)
     else:
