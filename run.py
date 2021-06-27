@@ -114,6 +114,7 @@ def main(opts):
     # rank, world_size = distributed.get_rank(), distributed.get_world_size()
     torch.cuda.set_device(device_id)
     
+    # Can we initialize rank = 0 ????
     rank = 0
     
     # Initialize logging
@@ -161,12 +162,14 @@ def main(opts):
     else:  # instance model_old
         model_old = make_model(opts, classes=tasks.get_per_task_classes(opts.dataset, opts.task, opts.step - 1))
 
+    # fix batch normalization during training (default: False)
     if opts.fix_bn:
         model.fix_bn()
 
     logger.debug(model)
 
     # xxx Set up optimizer
+    # We have to remove the following lines:
     params = []
     if not opts.freeze:
         params.append({"params": filter(lambda p: p.requires_grad, model.body.parameters()),
@@ -178,8 +181,10 @@ def main(opts):
     params.append({"params": filter(lambda p: p.requires_grad, model.cls.parameters()),
                    'weight_decay': opts.weight_decay})
 
+    # Initialize the optimizer with SGD:
     optimizer = torch.optim.SGD(params, lr=opts.lr, momentum=0.9, nesterov=True)
 
+    # Initialize the scheduler:
     if opts.lr_policy == 'poly':
         scheduler = utils.PolyLR(optimizer, max_iters=opts.epochs * len(train_loader), power=opts.lr_power)
     elif opts.lr_policy == 'step':
