@@ -105,7 +105,7 @@ class BiSeNet(torch.nn.Module):
             self.supervision1 = nn.Conv2d(in_channels=256, out_channels=num_classes, kernel_size=1)
             self.supervision2 = nn.Conv2d(in_channels=512, out_channels=num_classes, kernel_size=1)
             # build feature fusion module
-            self.feature_fusion_module = FeatureFusionModule(num_classes, 1024)
+            self.feature_fusion_module = FeatureFusionModule(32, 1024)  # modificato da num_classe a 32
         else:
             print('Error: unspport context_path network \n')
 
@@ -149,23 +149,28 @@ class BiSeNet(torch.nn.Module):
         cx2 = torch.nn.functional.interpolate(cx2, size=sx.size()[-2:], mode='bilinear')
         cx = torch.cat((cx1, cx2), dim=1)
 
+        '''
         if self.training == True:
             cx1_sup = self.supervision1(cx1)
             cx2_sup = self.supervision2(cx2)
             cx1_sup = torch.nn.functional.interpolate(cx1_sup, size=input.size()[-2:], mode='bilinear')
             cx2_sup = torch.nn.functional.interpolate(cx2_sup, size=input.size()[-2:], mode='bilinear')
-
+        '''
+        
         # output of feature fusion module
         result = self.feature_fusion_module(sx, cx)
 
         # upsampling
         result = torch.nn.functional.interpolate(result, scale_factor=8, mode='bilinear')
         
+        '''
         # Perché applica questa convoluzione?????
+        # Spostiamo questa convoluzione in segmentation_module
         result = self.conv(result)
-
+        '''
+        
         if self.training == True:
-            return result, cx1_sup, cx2_sup
+            return result, cx1, cx2
 
         return result
 
