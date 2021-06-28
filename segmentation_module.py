@@ -10,7 +10,7 @@ from functools import partial, reduce
 
 import models
 # from modules import DeeplabV3
-from modules import BiSeNet, build_contextpath
+from modules import *
 
 
 def make_model(opts, classes=None):
@@ -47,7 +47,7 @@ def make_model(opts, classes=None):
     '''
     
     # we have to set the parameters:
-    bisenet = BiSeNet( opts.num_classes, build_contextpath(opts.backbone) )  # use resente101 for the contextpath
+    bisenet = BiSeNet(opts.num_classes, opts.backbone)  # use resente101 for the contextpath
     
     if classes is not None:
         model = IncrementalSegmentationModule(bisenet, opts.num_classes, classes=classes, fusion_mode=opts.fusion_mode)
@@ -85,8 +85,8 @@ class IncrementalSegmentationModule(nn.Module):
         self.tot_classes = reduce(lambda a, b: a + b, self.classes)
         self.means = None
         
-        self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=num_classes, kernel_size=1)
-        self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=num_classes, kernel_size=1)
+        self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=32, kernel_size=1)
+        self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=32, kernel_size=1)
 
     def _network(self, x):
 
@@ -99,8 +99,8 @@ class IncrementalSegmentationModule(nn.Module):
         
         cx1_sup = self.supervision1(x_f1)
         cx2_sup = self.supervision2(x_f2)
-        cx1_sup = torch.nn.functional.interpolate(cx1_sup, size=input.size()[-2:], mode='bilinear')
-        cx2_sup = torch.nn.functional.interpolate(cx2_sup, size=input.size()[-2:], mode='bilinear')
+        cx1_sup = torch.nn.functional.interpolate(cx1_sup, size=x.size()[-2:], mode='bilinear')
+        cx2_sup = torch.nn.functional.interpolate(cx2_sup, size=x.size()[-2:], mode='bilinear')
         
         out_f0 = []
         out_f1 = []
