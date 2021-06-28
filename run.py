@@ -170,17 +170,15 @@ def main(opts):
 
     # xxx Set up optimizer
     # We have to remove the following lines:
+    
     params = []
-    if not opts.freeze:
-        params.append({"params": filter(lambda p: p.requires_grad, model.body.parameters()),
-                       'weight_decay': opts.weight_decay})
-
-    params.append({"params": filter(lambda p: p.requires_grad, model.head.parameters()),
+    
+    params.append({"params": filter(lambda p: p.requires_grad, model.bisenet.parameters()),
                    'weight_decay': opts.weight_decay})
 
     params.append({"params": filter(lambda p: p.requires_grad, model.cls.parameters()),
                    'weight_decay': opts.weight_decay})
-
+    
     # Initialize the optimizer with SGD:
     optimizer = torch.optim.SGD(params, lr=opts.lr, momentum=0.9, nesterov=True)
 
