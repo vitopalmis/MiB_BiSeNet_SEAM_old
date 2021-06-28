@@ -85,9 +85,18 @@ class IncrementalSegmentationModule(nn.Module):
         self.tot_classes = reduce(lambda a, b: a + b, self.classes)
         self.means = None
         
-        self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=32, kernel_size=1)
-        self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=32, kernel_size=1)
-
+        self.out_channels = 32
+        
+        if opts.backbone == 'resnet101':
+            self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=self.out_channels, kernel_size=1)
+            self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=self.out_channels, kernel_size=1)
+        elif opts.backbone == 'resnet18':
+            self.supervision1 = nn.Conv2d(in_channels=256, out_channels=self.out_channels, kernel_size=1)
+            self.supervision2 = nn.Conv2d(in_channels=512, out_channels=self.out_channels, kernel_size=1)
+        else:
+            print('Error: unspport context_path network \n')
+            
+            
     def _network(self, x):
 
         # take the input, put into bisenet
