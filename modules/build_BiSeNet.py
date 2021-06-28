@@ -84,7 +84,7 @@ class BiSeNet(torch.nn.Module):
         self.saptial_path = Spatial_path()
 
         # build context path
-        self.context_path = build_contextpath(name=context_path)
+        self.context_path = build_contextpath("resnet101")
 
         # build attention refinement module  for resnet 101
         if context_path == 'resnet101':
