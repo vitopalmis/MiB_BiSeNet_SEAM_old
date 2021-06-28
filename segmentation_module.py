@@ -10,7 +10,7 @@ from functools import partial, reduce
 
 import models
 # from modules import DeeplabV3
-from modules import BiSeNet, context_path
+from modules import BiSeNet, build_contextpath
 
 
 def make_model(opts, classes=None):
@@ -47,13 +47,13 @@ def make_model(opts, classes=None):
     '''
     
     # we have to set the parameters:
-    bisenet = BiSeNet()
+    bisenet = BiSeNet( opts.num_classes, build_contextpath(opts.backbone) )  # use resente101 for the contextpath
     
     if classes is not None:
-        model = IncrementalSegmentationModule(body, head, head_channels, classes=classes, fusion_mode=opts.fusion_mode)
+        model = IncrementalSegmentationModule(bisenet, opts.num_classes, classes=classes, fusion_mode=opts.fusion_mode)
     else:
         # What is this class? We haven't it. Have we to implement it? We think no. We don't need it.
-        model = SegmentationModule(body, head, head_channels, opts.num_classes, opts.fusion_mode)
+        model = SegmentationModule(bisenet, opts.num_classes, opts.num_classes, opts.fusion_mode)
 
     return model
 
@@ -67,10 +67,9 @@ def flip(x, dim):
 
 class IncrementalSegmentationModule(nn.Module):
 
-    def __init__(self, body, head, head_channels, classes, ncm=False, fusion_mode="mean"):
+    def __init__(self, bisenet, numClasses, classes, ncm=False, fusion_mode="mean"):
         super(IncrementalSegmentationModule, self).__init__()
-        self.body = body
-        self.head = head
+        self.bisenet = bisenet
         # classes must be a list where [n_class_task[i] for i in tasks]
         assert isinstance(classes, list), \
             "Classes must be a list where to every index correspond the num of classes for that task"
@@ -79,25 +78,24 @@ class IncrementalSegmentationModule(nn.Module):
         # output dimension = number of classes for task c, c index = i
         # kernel = 1
         self.cls = nn.ModuleList(
-            [nn.Conv2d(head_channels, c, 1) for c in classes]
+            [nn.Conv2d(c, c, 1) for c in classes]
         )
         self.classes = classes
-        self.head_channels = head_channels
+        self.numClasses = numClasses
         self.tot_classes = reduce(lambda a, b: a + b, self.classes)
         self.means = None
 
     def _network(self, x, ret_intermediate=False):
 
-        # take the input, put into the body and give the result to the head
-        x_b = self.body(x)  # x_b = x body
-        x_pl = self.head(x_b)  # x_pl = x pre_logits
+        # take the input, put into bisenet
+        x_b = self.bisenet(x)
         
         out = []
         
         # for each convolution in cls, add the result of the 
-        # convolution applied on the output of the head
+        # convolution applied on the output of bisenet
         for mod in self.cls:
-            out.append(mod(x_pl))
+            out.append(mod(x_b))
             
         # concatenates the conv results
         # (out is a list of tensors)
@@ -105,7 +103,7 @@ class IncrementalSegmentationModule(nn.Module):
 
         # if you want the intermediate results:
         if ret_intermediate:
-            return x_o, x_b, x_pl
+            return x_o, x_b
         # else:
         return x_o
 
@@ -143,7 +141,7 @@ class IncrementalSegmentationModule(nn.Module):
         sem_logits = functional.interpolate(sem_logits, size=out_size, mode="bilinear", align_corners=False)
 
         if ret_intermediate:
-            return sem_logits, {"body": out[1], "pre_logits": out[2]}
+            return sem_logits, {"bisenet": out[1]}
 
         return sem_logits, {}
 
