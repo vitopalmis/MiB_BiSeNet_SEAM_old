@@ -102,6 +102,8 @@ class Trainer:
                         outputs_old, features_old = self.model_old(images, ret_intermediate=self.ret_intermediate)
 
                 optim.zero_grad()
+                
+                '''
                 outputs, features = model(images, ret_intermediate=self.ret_intermediate)
 
                 # xxx BCE / Cross Entropy Loss
@@ -111,6 +113,15 @@ class Trainer:
                     loss = self.licarl(outputs, labels, torch.sigmoid(outputs_old))
 
                 loss = loss.mean()  # scalar
+                '''
+                
+                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
+
+                loss0 = criterion(features0, labels)  # B x H x W 
+                loss1 = criterion(features1, labels)  # B x H x W 
+                loss2 = criterion(features2, labels)  # B x H x W 
+
+                loss = loss0.mean() + loss1.mean() + loss2.mean() # scalar
 
                 if self.icarl_combined:
                     # tensor.narrow( dim, start, end) -> slice tensor from start to end in the specified dim
@@ -209,6 +220,7 @@ class Trainer:
                     with torch.no_grad():
                         outputs_old, features_old = self.model_old(images, ret_intermediate=True)
 
+                '''
                 outputs, features = model(images, ret_intermediate=True)
 
                 # xxx BCE / Cross Entropy Loss
@@ -218,7 +230,16 @@ class Trainer:
                     loss = self.licarl(outputs, labels, torch.sigmoid(outputs_old))
 
                 loss = loss.mean()  # scalar
+                '''
+                
+                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
 
+                loss0 = criterion(features0, labels)  # B x H x W 
+                loss1 = criterion(features1, labels)  # B x H x W 
+                loss2 = criterion(features2, labels)  # B x H x W 
+
+                loss = loss0.mean() + loss1.mean() + loss2.mean() # scalar
+                
                 if self.icarl_combined:
                     # tensor.narrow( dim, start, end) -> slice tensor from start to end in the specified dim
                     n_cl_old = outputs_old.shape[1]
