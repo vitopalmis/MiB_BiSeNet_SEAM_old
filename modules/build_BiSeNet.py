@@ -84,7 +84,7 @@ class BiSeNet(torch.nn.Module):
         self.saptial_path = Spatial_path()
 
         # build context path
-        self.context_path = build_contextpath("resnet101")
+        self.context_path = build_contextpath(name=context_path)
 
         # build attention refinement module  for resnet 101
         if context_path == 'resnet101':
@@ -94,7 +94,7 @@ class BiSeNet(torch.nn.Module):
             self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=num_classes, kernel_size=1)
             self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=num_classes, kernel_size=1)
             # build feature fusion module
-            self.feature_fusion_module = FeatureFusionModule(num_classes, 3328)
+            self.feature_fusion_module = FeatureFusionModule(32, 3328)  # modificato da num_classe a 32
 
         elif context_path == 'resnet18':
             # build attention refinement module  for resnet 18
