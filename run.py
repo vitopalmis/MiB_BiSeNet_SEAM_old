@@ -139,7 +139,7 @@ def main(opts):
     random.seed(opts.random_seed)
 
     train_loader = data.DataLoader(train_dst, batch_size=opts.batch_size,
-                                   num_workers=opts.num_workers, drop_last=True)
+                                   num_workers=opts.num_workers, drop_last=True, shuffle=True)
                                    # sampler=DistributedSampler(train_dst, num_replicas=world_size, rank=rank),
     val_loader = data.DataLoader(val_dst, batch_size=opts.batch_size if opts.crop_val else 1,
                                  num_workers=opts.num_workers)
