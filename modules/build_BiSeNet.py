@@ -123,7 +123,7 @@ class BiSeNet(torch.nn.Module):
         self.mul_lr.append(self.feature_fusion_module)
         self.mul_lr.append(self.conv)
 
-    # Inizializza i pesi???? Se sì, come???
+    # Inizializza i pesi, sfruttando i pesi di una rete già trainata ( kaiming_normal_ method )
     def init_weight(self):
         for name, m in self.named_modules():
             if 'context_path' not in name:
