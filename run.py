@@ -344,7 +344,7 @@ def main(opts):
                   model, trainer, optimizer, scheduler, cur_epoch, best_score)
         logger.info("[!] Checkpoint saved.")
 
-    torch.distributed.barrier()
+    # torch.distributed.barrier()
 
     # xxx From here starts the test code
     logger.info("*** Test the model on all seen classes...")
