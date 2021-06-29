@@ -1,7 +1,7 @@
 tasks_voc = {
     "debug":
         {
-            0: [20],   
+            0: [0, 1, 5],   
         },
     "offline":
         {
