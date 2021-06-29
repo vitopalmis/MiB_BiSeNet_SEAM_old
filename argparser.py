@@ -40,7 +40,7 @@ def modify_command_options(opts):
             opts.unkd = True
             opts.init_balanced = True
             opts.backbone = "resnet18"
-            opts.task = "15-5"  # try with "15-5" and "15-5s"
+            opts.task = "debug"  # try with "15-5" and "15-5s"
 
     opts.no_overlap = not opts.overlap
     opts.no_cross_val = not opts.cross_val
