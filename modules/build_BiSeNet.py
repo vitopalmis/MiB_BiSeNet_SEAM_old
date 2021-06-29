@@ -177,10 +177,13 @@ class BiSeNet(torch.nn.Module):
         result = self.conv(result)
         '''
         
+        '''
         if self.training == True:
             return result, cx1, cx2
-
+        
         return result
+        '''
+        return result, cx1, cx2
 
 
 if __name__ == '__main__':
