@@ -99,7 +99,7 @@ class Trainer:
 
                 if (self.lde_flag or self.lkd_flag or self.icarl_dist_flag) and self.model_old is not None:
                     with torch.no_grad():
-                        outputs_old, features_old = self.model_old(images, ret_intermediate=self.ret_intermediate)
+                        probabilities_old, features1_old, features2_old, bisenet_dict_old = self.model_old(images, ret_intermediate=self.ret_intermediate)
 
                 optim.zero_grad()
                 
@@ -115,7 +115,7 @@ class Trainer:
                 loss = loss.mean()  # scalar
                 '''
                 
-                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
+                probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
 
                 loss0 = criterion(features0, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
@@ -123,20 +123,23 @@ class Trainer:
 
                 loss = loss0.mean() + loss1.mean() + loss2.mean() # scalar
 
+                '''
                 if self.icarl_combined:
                     # tensor.narrow( dim, start, end) -> slice tensor from start to end in the specified dim
-                    n_cl_old = outputs_old.shape[1]
+                    n_cl_old = probabilities_old.shape[1]
                     # use n_cl_old to sum the contribution of each class, and not to average them (as done in our BCE).
-                    l_icarl = self.icarl * n_cl_old * self.licarl(outputs.narrow(1, 0, n_cl_old),
-                                                                  torch.sigmoid(outputs_old))
+                    l_icarl = self.icarl * n_cl_old * self.licarl(probabilities.narrow(1, 0, n_cl_old),
+                                                                  torch.sigmoid(probabilities_old))
+                '''
 
                 # xxx ILTSS (distillation on features or logits)
+                # How to change this part??????????
                 if self.lde_flag:
                     lde = self.lde * self.lde_loss(features['body'], features_old['body'])
 
                 if self.lkd_flag:
                     # resize new output to remove new logits and keep only the old ones
-                    lkd = self.lkd * self.lkd_loss(outputs, outputs_old)
+                    lkd = self.lkd * self.lkd_loss(probabilities, probabilities_old)
 
                 # xxx first backprop of previous loss (compute the gradients for regularization methods)
                 loss_tot = loss + lkd + lde + l_icarl
@@ -218,7 +221,7 @@ class Trainer:
 
                 if (self.lde_flag or self.lkd_flag or self.icarl_dist_flag) and self.model_old is not None:
                     with torch.no_grad():
-                        outputs_old, features_old = self.model_old(images, ret_intermediate=True)
+                        probabilities_old, features1_old, features2_old, bisenet_dict_old = self.model_old(images, ret_intermediate=True)
 
                 '''
                 outputs, features = model(images, ret_intermediate=True)
@@ -232,7 +235,7 @@ class Trainer:
                 loss = loss.mean()  # scalar
                 '''
                 
-                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
+                probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
 
                 loss0 = criterion(features0, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
@@ -240,19 +243,22 @@ class Trainer:
 
                 loss = loss0.mean() + loss1.mean() + loss2.mean() # scalar
                 
+                '''
                 if self.icarl_combined:
                     # tensor.narrow( dim, start, end) -> slice tensor from start to end in the specified dim
-                    n_cl_old = outputs_old.shape[1]
+                    n_cl_old = probabilities_old.shape[1]
                     # use n_cl_old to sum the contribution of each class, and not to average them (as done in our BCE).
-                    l_icarl = self.icarl * n_cl_old * self.licarl(outputs.narrow(1, 0, n_cl_old),
-                                                                  torch.sigmoid(outputs_old))
+                    l_icarl = self.icarl * n_cl_old * self.licarl(probabilities.narrow(1, 0, n_cl_old),
+                                                                  torch.sigmoid(probabilities_old))
+                '''
 
                 # xxx ILTSS (distillation on features or logits)
+                # How to change this part??????????
                 if self.lde_flag:
                     lde = self.lde_loss(features['body'], features_old['body'])
 
                 if self.lkd_flag:
-                    lkd = self.lkd_loss(outputs, outputs_old)
+                    lkd = self.lkd_loss(probabilities, probabilities_old)
 
                 # xxx Regularizer (EWC, RW, PI)
                 if self.regularizer_flag:
@@ -262,7 +268,7 @@ class Trainer:
                 reg_loss += l_reg.item() if l_reg != 0. else 0.
                 reg_loss += lkd.item() + lde.item() + l_icarl.item()
 
-                _, prediction = outputs.max(dim=1)
+                _, prediction = probabilities.max(dim=1)
 
                 labels = labels.cpu().numpy()
                 prediction = prediction.cpu().numpy()
