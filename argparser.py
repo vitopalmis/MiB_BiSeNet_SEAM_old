@@ -5,6 +5,7 @@ import tasks
 def modify_command_options(opts):
     
     opts.method = "MiB"
+    opts.epochs = 2
     
     if opts.dataset == 'voc':
         opts.num_classes = 21
