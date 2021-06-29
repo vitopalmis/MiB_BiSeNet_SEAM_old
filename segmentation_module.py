@@ -50,10 +50,10 @@ def make_model(opts, classes=None):
     bisenet = BiSeNet(opts.num_classes, opts.backbone)  # use resente101 for the contextpath
     
     if classes is not None:
-        model = IncrementalSegmentationModule(bisenet, opts.num_classes, classes=classes, fusion_mode=opts.fusion_mode)
+        model = IncrementalSegmentationModule(bisenet, opts.num_classes, classes=classes, fusion_mode=opts.fusion_mode, backbone=opts.backbone)
     else:
         # What is this class? We haven't it. Have we to implement it? We think no. We don't need it.
-        model = SegmentationModule(bisenet, opts.num_classes, opts.num_classes, opts.fusion_mode)
+        model = SegmentationModule(bisenet, opts.num_classes, opts.num_classes, opts.fusion_mode, backbone=opts.backbone)
 
     return model
 
@@ -67,7 +67,7 @@ def flip(x, dim):
 
 class IncrementalSegmentationModule(nn.Module):
 
-    def __init__(self, bisenet, numClasses, classes, ncm=False, fusion_mode="mean"):
+    def __init__(self, bisenet, numClasses, classes, ncm=False, fusion_mode="mean", backbone="resnet101"):
         super(IncrementalSegmentationModule, self).__init__()
         self.bisenet = bisenet
         # classes must be a list where [n_class_task[i] for i in tasks]
@@ -87,10 +87,10 @@ class IncrementalSegmentationModule(nn.Module):
         
         self.out_channels = 32
         
-        if opts.backbone == 'resnet101':
+        if backbone == 'resnet101':
             self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=self.out_channels, kernel_size=1)
             self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=self.out_channels, kernel_size=1)
-        elif opts.backbone == 'resnet18':
+        elif backbone == 'resnet18':
             self.supervision1 = nn.Conv2d(in_channels=256, out_channels=self.out_channels, kernel_size=1)
             self.supervision2 = nn.Conv2d(in_channels=512, out_channels=self.out_channels, kernel_size=1)
         else:
