@@ -117,7 +117,7 @@ class Trainer:
                 
                 probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
 
-                loss0 = criterion(features0, labels)  # B x H x W 
+                loss0 = criterion(probabilities, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
                 loss2 = criterion(features2, labels)  # B x H x W 
 
@@ -237,7 +237,7 @@ class Trainer:
                 
                 probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
 
-                loss0 = criterion(features0, labels)  # B x H x W 
+                loss0 = criterion(probabilities, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
                 loss2 = criterion(features2, labels)  # B x H x W 
 
