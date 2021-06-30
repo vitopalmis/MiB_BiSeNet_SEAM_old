@@ -179,6 +179,12 @@ def main(opts):
     params.append({"params": filter(lambda p: p.requires_grad, model.cls.parameters()),
                    'weight_decay': opts.weight_decay})
     
+    params.append({"params": filter(lambda p: p.requires_grad, model.sup1.parameters()),
+                   'weight_decay': opts.weight_decay})
+    
+    params.append({"params": filter(lambda p: p.requires_grad, model.sup2.parameters()),
+                   'weight_decay': opts.weight_decay})
+    
     # Initialize the optimizer with SGD:
     optimizer = torch.optim.SGD(params, lr=opts.lr, momentum=0.9, nesterov=True)
 
