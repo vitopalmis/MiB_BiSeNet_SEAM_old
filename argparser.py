@@ -9,6 +9,11 @@ def modify_command_options(opts):
     opts.backbone = "resnet18"
     opts.task = "debug"  # try with "15-5" and "15-5s"
     
+    # set BiSeNet parameters ( the best parameters we taken from point 1 )
+    opts.batch_size = 32
+    opts.lr = 0.002
+    
+    
     if opts.dataset == 'voc':
         opts.num_classes = 21
     if opts.dataset == 'ade':
@@ -79,12 +84,12 @@ def get_argparser():
     parser.add_argument("--fix_bn", action='store_true', default=False,
                         help='fix batch normalization during training (default: False)')
 
-    parser.add_argument("--batch_size", type=int, default=32,  # original was 4
+    parser.add_argument("--batch_size", type=int, default=4,
                         help='batch size (default: 4)')
     parser.add_argument("--crop_size", type=int, default=512,
                         help="crop size (default: 513)")
 
-    parser.add_argument("--lr", type=float, default=0.002,  # original was 0.007
+    parser.add_argument("--lr", type=float, default=0.007,
                         help="learning rate (default: 0.007)")
     parser.add_argument("--momentum", type=float, default=0.9,
                         help='momentum for SGD (default: 0.9)')
