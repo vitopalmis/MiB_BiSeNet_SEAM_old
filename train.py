@@ -99,7 +99,7 @@ class Trainer:
 
                 if (self.lde_flag or self.lkd_flag or self.icarl_dist_flag) and self.model_old is not None:
                     with torch.no_grad():
-                        probabilities_old, features1_old, features2_old, bisenet_dict_old = self.model_old(images, ret_intermediate=self.ret_intermediate)
+                        features0_old, features1_old, features2_old, probabilities_old = self.model_old(images, ret_intermediate=self.ret_intermediate)
 
                 optim.zero_grad()
                 
@@ -115,9 +115,9 @@ class Trainer:
                 loss = loss.mean()  # scalar
                 '''
                 
-                probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
+                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
 
-                loss0 = criterion(probabilities, labels)  # B x H x W 
+                loss0 = criterion(features0, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
                 loss2 = criterion(features2, labels)  # B x H x W 
 
@@ -135,11 +135,19 @@ class Trainer:
                 # xxx ILTSS (distillation on features or logits)
                 # How to change this part??????????
                 if self.lde_flag:
+                    # Ha senso fare due lde, uno con l'output di cx1 e l'altro con l'output di cx2?
+                    # Nel caso, sommiamo le due loss o facciamo la media?
                     lde = self.lde * self.lde_loss(features['body'], features_old['body'])
+                    '''
+                    lde1 = self.lde * self.lde_loss(features1, features1_old)
+                    lde2 = self.lde * self.lde_loss(features2, features2_old)
+                    lde = ??
+                    '''
 
                 if self.lkd_flag:
                     # resize new output to remove new logits and keep only the old ones
-                    lkd = self.lkd * self.lkd_loss(probabilities, probabilities_old)
+                    # Qui stiamo inserendo features0 invece di probabilities. E' corretto??
+                    lkd = self.lkd * self.lkd_loss(features0, features0_old)
 
                 # xxx first backprop of previous loss (compute the gradients for regularization methods)
                 loss_tot = loss + lkd + lde + l_icarl
@@ -221,7 +229,7 @@ class Trainer:
 
                 if (self.lde_flag or self.lkd_flag or self.icarl_dist_flag) and self.model_old is not None:
                     with torch.no_grad():
-                        probabilities_old, features1_old, features2_old, bisenet_dict_old = self.model_old(images, ret_intermediate=True)
+                        features0_old, features1_old, features2_old, probabilities_old = self.model_old(images, ret_intermediate=True)
 
                 '''
                 outputs, features = model(images, ret_intermediate=True)
@@ -235,9 +243,9 @@ class Trainer:
                 loss = loss.mean()  # scalar
                 '''
                 
-                probabilities, features1, features2, bisenet_dict = model(images, ret_intermediate=self.ret_intermediate)
+                features0, features1, features2, probabilities = model(images, ret_intermediate=self.ret_intermediate)
 
-                loss0 = criterion(probabilities, labels)  # B x H x W 
+                loss0 = criterion(features0, labels)  # B x H x W 
                 loss1 = criterion(features1, labels)  # B x H x W 
                 loss2 = criterion(features2, labels)  # B x H x W 
 
@@ -255,10 +263,14 @@ class Trainer:
                 # xxx ILTSS (distillation on features or logits)
                 # How to change this part??????????
                 if self.lde_flag:
+                    # vedere riga 138
+                    '''
                     lde = self.lde_loss(features['body'], features_old['body'])
+                    '''
 
                 if self.lkd_flag:
-                    lkd = self.lkd_loss(probabilities, probabilities_old)
+                    # vedere riga 148
+                    lkd = self.lkd_loss(features0, features0_old)
 
                 # xxx Regularizer (EWC, RW, PI)
                 if self.regularizer_flag:
@@ -268,7 +280,7 @@ class Trainer:
                 reg_loss += l_reg.item() if l_reg != 0. else 0.
                 reg_loss += lkd.item() + lde.item() + l_icarl.item()
 
-                _, prediction = probabilities.max(dim=1)
+                _, prediction = features0.max(dim=1)
 
                 labels = labels.cpu().numpy()
                 prediction = prediction.cpu().numpy()
