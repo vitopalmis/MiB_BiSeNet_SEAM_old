@@ -4,8 +4,10 @@ import tasks
 
 def modify_command_options(opts):
     
-    opts.method = "MiB"
-    opts.epochs = 2
+    opts.method = "FT"
+    opts.epochs = 10
+    opts.backbone = "resnet18"
+    opts.task = "debug"  # try with "15-5" and "15-5s"
     
     if opts.dataset == 'voc':
         opts.num_classes = 21
@@ -40,8 +42,6 @@ def modify_command_options(opts):
             opts.unce = True
             opts.unkd = True
             opts.init_balanced = True
-            opts.backbone = "resnet18"
-            opts.task = "debug"  # try with "15-5" and "15-5s"
 
     opts.no_overlap = not opts.overlap
     opts.no_cross_val = not opts.cross_val
@@ -79,12 +79,12 @@ def get_argparser():
     parser.add_argument("--fix_bn", action='store_true', default=False,
                         help='fix batch normalization during training (default: False)')
 
-    parser.add_argument("--batch_size", type=int, default=4,
+    parser.add_argument("--batch_size", type=int, default=32,  # original was 4
                         help='batch size (default: 4)')
     parser.add_argument("--crop_size", type=int, default=512,
                         help="crop size (default: 513)")
 
-    parser.add_argument("--lr", type=float, default=0.007,
+    parser.add_argument("--lr", type=float, default=0.002,  # original was 0.007
                         help="learning rate (default: 0.007)")
     parser.add_argument("--momentum", type=float, default=0.9,
                         help='momentum for SGD (default: 0.9)')
