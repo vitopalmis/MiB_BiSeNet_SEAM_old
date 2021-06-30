@@ -136,7 +136,7 @@ class IncrementalSegmentationModule(nn.Module):
         # for each convolution in cls, add the result of the 
         # convolution applied on the output of cx1
         for mod in self.sup1:
-            cx1_sup = self.mod(x_f1)
+            cx1_sup = mod(x_f1)
             out_f1.append(cx1_sup)
             
         # concatenates the conv results
@@ -146,7 +146,7 @@ class IncrementalSegmentationModule(nn.Module):
         # for each convolution in cls, add the result of the 
         # convolution applied on the output of cx2
         for mod in self.sup2:
-            cx2_sup = self.mod(x_f2)
+            cx2_sup = mod(x_f2)
             out_f2.append(cx2_sup)
             
         # concatenates the conv results
