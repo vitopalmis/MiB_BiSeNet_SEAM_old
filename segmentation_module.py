@@ -80,11 +80,21 @@ class IncrementalSegmentationModule(nn.Module):
         self.cls = nn.ModuleList(
             [nn.Conv2d(32, c, 1) for c in classes]  # cambiato da 'c' a 32
         )
+        
+        if backbone == 'resnet101':
+            self.sup1_in_channels = 1024
+            self.sup2_in_channels = 2048
+        elif backbone == 'resnet18':
+            self.sup1_in_channels = 256
+            self.sup2_in_channels = 512
+        else:
+            print('Error: unspport context_path network \n')
+        
         self.sup1 = nn.ModuleList(
-            [nn.Conv2d(1024, c, 1) for c in classes]  # cambiato da 'c' a 32
+            [nn.Conv2d(self.sup1_in_channels, c, 1) for c in classes]  # cambiato da 'c' a 32
         )
         self.sup2 = nn.ModuleList(
-            [nn.Conv2d(2048, c, 1) for c in classes]  # cambiato da 'c' a 32
+            [nn.Conv2d(self.sup2_in_channels, c, 1) for c in classes]  # cambiato da 'c' a 32
         )
         self.classes = classes
         self.numClasses = numClasses
@@ -92,15 +102,6 @@ class IncrementalSegmentationModule(nn.Module):
         self.means = None
         
         self.out_channels = 32
-        
-        if backbone == 'resnet101':
-            self.supervision1 = nn.Conv2d(in_channels=1024, out_channels=self.out_channels, kernel_size=1)
-            self.supervision2 = nn.Conv2d(in_channels=2048, out_channels=self.out_channels, kernel_size=1)
-        elif backbone == 'resnet18':
-            self.supervision1 = nn.Conv2d(in_channels=256, out_channels=self.out_channels, kernel_size=1)
-            self.supervision2 = nn.Conv2d(in_channels=512, out_channels=self.out_channels, kernel_size=1)
-        else:
-            print('Error: unspport context_path network \n')
             
             
     def _network(self, x):
@@ -112,10 +113,12 @@ class IncrementalSegmentationModule(nn.Module):
         x_f1 = x_b[1]  # cx1
         x_f2 = x_b[2]  # cx2
         
+        '''
         cx1_sup = self.supervision1(x_f1)
         cx2_sup = self.supervision2(x_f2)
         cx1_sup = torch.nn.functional.interpolate(cx1_sup, size=x.size()[-2:], mode='bilinear')
         cx2_sup = torch.nn.functional.interpolate(cx2_sup, size=x.size()[-2:], mode='bilinear')
+        '''
         
         out_f0 = []
         out_f1 = []
