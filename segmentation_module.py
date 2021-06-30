@@ -80,6 +80,12 @@ class IncrementalSegmentationModule(nn.Module):
         self.cls = nn.ModuleList(
             [nn.Conv2d(32, c, 1) for c in classes]  # cambiato da 'c' a 32
         )
+        self.sup1 = nn.ModuleList(
+            [nn.Conv2d(1024, c, 1) for c in classes]  # cambiato da 'c' a 32
+        )
+        self.sup2 = nn.ModuleList(
+            [nn.Conv2d(2048, c, 1) for c in classes]  # cambiato da 'c' a 32
+        )
         self.classes = classes
         self.numClasses = numClasses
         self.tot_classes = reduce(lambda a, b: a + b, self.classes)
@@ -126,8 +132,9 @@ class IncrementalSegmentationModule(nn.Module):
         
         # for each convolution in cls, add the result of the 
         # convolution applied on the output of cx1
-        for mod in self.cls:
-            out_f1.append(mod(cx1_sup))
+        for mod in self.sup1:
+            cx1_sup = self.mod(x_f1)
+            out_f1.append(cx1_sup)
             
         # concatenates the conv results
         # (out is a list of tensors)
@@ -135,8 +142,9 @@ class IncrementalSegmentationModule(nn.Module):
         
         # for each convolution in cls, add the result of the 
         # convolution applied on the output of cx2
-        for mod in self.cls:
-            out_f2.append(mod(cx2_sup))
+        for mod in self.sup2:
+            cx2_sup = self.mod(x_f2)
+            out_f2.append(cx2_sup)
             
         # concatenates the conv results
         # (out is a list of tensors)
@@ -175,6 +183,7 @@ class IncrementalSegmentationModule(nn.Module):
         sem_logits_f0 = out[0]
         sem_logits_f1 = out[1]
         sem_logits_f2 = out[2]
+        probabilities = out[3]
 
         # up_sample x_o to the original dimension of the input
         sem_logits_f0 = functional.interpolate(sem_logits_f0, size=out_size, mode="bilinear", align_corners=False)
@@ -182,9 +191,9 @@ class IncrementalSegmentationModule(nn.Module):
         sem_logits_f2 = functional.interpolate(sem_logits_f2, size=out_size, mode="bilinear", align_corners=False)
 
         if ret_intermediate:
-            return sem_logits_f0, sem_logits_f1, sem_logits_f2, {"bisenet": out[3]}
+            return sem_logits_f0, sem_logits_f1, sem_logits_f2, probabilities
 
-        return sem_logits_f0, sem_logits_f1, sem_logits_f2, {}
+        return sem_logits_f0, sem_logits_f1, sem_logits_f2, probabilities
 
     # fix batch normalization during training:
     def fix_bn(self):
