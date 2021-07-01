@@ -168,10 +168,12 @@ class Trainer:
                             scaled_loss.backward()
 
                 #optim.step()
-                #self.scaler.step(optim)
+                
+                self.scaler.step(optim)
+                self.scaler.update()
+                
                 if scheduler is not None:
                     scheduler.step()
-                    #self.scaler.step(optim)
 
                 epoch_loss += loss.item()
                 reg_loss += l_reg.item() if l_reg != 0. else 0.
