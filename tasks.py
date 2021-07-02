@@ -163,3 +163,15 @@ def get_per_task_classes(dataset, name, step):
 
     classes = [len(task_dict[s]) for s in range(step+1)]
     return classes
+
+
+def get_num_steps(dataset, name):
+    if dataset == 'voc':
+        task_dict = tasks_voc[name]
+    elif dataset == 'ade':
+        task_dict = tasks_ade[name]
+    else:
+        raise NotImplementedError
+
+    numClasses = len(task_dict.keys())
+    return numClasses
