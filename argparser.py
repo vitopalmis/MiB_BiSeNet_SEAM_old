@@ -4,13 +4,13 @@ import tasks
 
 def modify_command_options(opts):
     
-    opts.method = "FT"
+    opts.method = "MiB"
     opts.epochs = 10
-    opts.backbone = "resnet18"
-    opts.task = "debug"  # try with "15-5" and "15-5s"
+    opts.backbone = "resnet101"
+    opts.task = "15-5"  # try with "15-5" and "15-5s"
     
     # set BiSeNet parameters ( the best parameters we taken from point 1 )
-    opts.batch_size = 32
+    opts.batch_size = 16
     opts.lr = 0.002
     
     
