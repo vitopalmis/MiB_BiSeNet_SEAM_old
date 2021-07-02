@@ -406,3 +406,5 @@ if __name__ == '__main__':
     for el in range(tasks.get_num_steps(opts.dataset, opts.task)):
         main(opts)
         opts.step += 1
+        if opts.step == 1:
+            opts.lr = opts.lr / 10
