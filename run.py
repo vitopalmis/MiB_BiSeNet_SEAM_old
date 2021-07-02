@@ -161,6 +161,7 @@ def main(opts):
         model_old = None
     else:  # instance model_old
         model_old = make_model(opts, classes=tasks.get_per_task_classes(opts.dataset, opts.task, opts.step - 1))
+        model_old = model_old.cuda()
 
     # fix batch normalization during training (default: False)
     if opts.fix_bn:
@@ -216,7 +217,7 @@ def main(opts):
             model.load_state_dict(step_checkpoint['model_state'], strict=False)  # False because of incr. classifiers
             if opts.init_balanced:
                 # implement the balanced initialization (new cls has weight of background and bias = bias_bkg - log(N+1)
-                model.module.init_new_classifier(device)
+                model.init_new_classifier(device)
             # Load state dict from the model state dict, that contains the old model parameters
             model_old.load_state_dict(step_checkpoint['model_state'], strict=True)  # Load also here old parameters
             logger.info(f"[!] Previous model loaded from {path}")
@@ -402,4 +403,6 @@ if __name__ == '__main__':
 
     os.makedirs("checkpoints/step", exist_ok=True)
 
-    main(opts)
+    for el in range(tasks.get_num_steps(opts.dataset, opts.task)):
+        main(opts)
+        opts.step += 1
