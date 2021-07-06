@@ -5,7 +5,7 @@ import tasks
 def modify_command_options(opts):
     
     opts.method = "MiB"
-    opts.epochs = 10
+    opts.epochs = 30
     opts.backbone = "resnet101"
     opts.task = "15-5"  # try with "15-5" and "15-5s"
     
