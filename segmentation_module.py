@@ -87,6 +87,12 @@ class IncrementalSegmentationModule(nn.Module):
         elif backbone == 'resnet18':
             self.sup1_in_channels = 256
             self.sup2_in_channels = 512
+        elif backbone == 'resnet34':
+            self.sup1_in_channels = 256
+            self.sup2_in_channels = 512
+        elif backbone == 'resnet50':
+            self.sup1_in_channels = 1024
+            self.sup2_in_channels = 2048
         else:
             print('Error: unspport context_path network \n')
         
