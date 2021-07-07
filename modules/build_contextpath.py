@@ -136,7 +136,9 @@ class resnet101(torch.nn.Module):
 def build_contextpath(name):
     model = {
         'resnet18': resnet18(pretrained=True),
-        'resnet101': resnet101(pretrained=True)
+        'resnet101': resnet101(pretrained=True),
+        'resnet34': resnet34(pretrained=True),
+        'resnet50': resnet50(pretrained=True)
     }
     return model[name]
 
