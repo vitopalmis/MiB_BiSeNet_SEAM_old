@@ -137,12 +137,12 @@ class Trainer:
                 if self.lde_flag:
                     # Ha senso fare due lde, uno con l'output di cx1 e l'altro con l'output di cx2?
                     # Nel caso, sommiamo le due loss o facciamo la media?
-                    lde = self.lde * self.lde_loss(features['body'], features_old['body'])
-                    '''
+                    
                     lde1 = self.lde * self.lde_loss(features1, features1_old)
                     lde2 = self.lde * self.lde_loss(features2, features2_old)
-                    lde = ??
-                    '''
+                    lde = lde1.mean() + lde2.mean()
+                    
+                    #lde = self.lde * self.lde_loss(features['body'], features_old['body'])
 
                 if self.lkd_flag:
                     # resize new output to remove new logits and keep only the old ones
@@ -269,6 +269,9 @@ class Trainer:
                     '''
                     lde = self.lde_loss(features['body'], features_old['body'])
                     '''
+                    lde1 = self.lde * self.lde_loss(features1, features1_old)
+                    lde2 = self.lde * self.lde_loss(features2, features2_old)
+                    lde = lde1.mean() + lde2.mean()
 
                 if self.lkd_flag:
                     # vedere riga 148
