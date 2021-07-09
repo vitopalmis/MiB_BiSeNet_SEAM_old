@@ -269,8 +269,8 @@ class Trainer:
                     '''
                     lde = self.lde_loss(features['body'], features_old['body'])
                     '''
-                    lde1 = self.lde * self.lde_loss(features1, features1_old)
-                    lde2 = self.lde * self.lde_loss(features2, features2_old)
+                    lde1 = self.lde_loss(features1, features1_old)
+                    lde2 = self.lde_loss(features2, features2_old)
                     lde = lde1.mean() + lde2.mean()
 
                 if self.lkd_flag:
