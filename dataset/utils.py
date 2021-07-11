@@ -61,6 +61,8 @@ class Subset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         sample, target = self.dataset[self.indices[idx]]
 
+        # CAMBIAMO QUI IL TARGET
+        
         if self.transform is not None:
             sample, target = self.transform(sample, target)
 
