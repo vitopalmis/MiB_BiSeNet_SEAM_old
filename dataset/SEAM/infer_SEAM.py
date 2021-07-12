@@ -1,41 +1,41 @@
-
 import numpy as np
 import torch
 import cv2
 import os
-import voc12.data
-import scipy.misc
+from .voc12_SEAM import data_SEAM, resnet38_SEAM
+import imageio
 import importlib
 from torch.utils.data import DataLoader
 import torchvision
-from voc12 import imutils, pyutils, visualization
+from .voc12_SEAM import imutils, pyutils, visualization
 import argparse
 from PIL import Image
 import torch.nn.functional as F
 import pandas as pd
 
-if __name__ == '__main__':
+def SEAM_infer():
+
+    weights = "/content/MiB_BiSeNet_SEAM/dataset/SEAM/session.pth"
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--weights", required=True, type=str)
     parser.add_argument("--network", default="voc12.resnet38_SEAM", type=str)
-    parser.add_argument("--infer_list", default="voc12/train.txt", type=str)
+    parser.add_argument("--infer_list", default="/content/MiB_BiSeNet_SEAM/Incr_data.txt", type=str)
     parser.add_argument("--num_workers", default=8, type=int)
-    parser.add_argument("--voc12_root", default='data/VOCdevkit/VOC2012', type=str)
-    parser.add_argument("--out_cam", default=None, type=str)
-    parser.add_argument("--out_crf", default=None, type=str) 
-    parser.add_argument("--out_cam_pred", default=None, type=str)
+    parser.add_argument("--voc12_root", default='/content/MiB_BiSeNet_SEAM/data/PascalVOC12/', type=str)
+    parser.add_argument("--out_cam", default="/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam/", type=str)
+    parser.add_argument("--out_crf", default="/content/MiB_BiSeNet_SEAM/dataset/SEAM/crf/", type=str) 
+    parser.add_argument("--out_cam_pred", default="/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam_pred/", type=str)
     parser.add_argument("--out_cam_pred_alpha", default=0.26, type=float)
 
     args = parser.parse_args()
     crf_alpha = [4,24]
-    model = getattr(importlib.import_module(args.network), 'Net')()
-    model.load_state_dict(torch.load(args.weights))
+    model = getattr(resnet38_SEAM, 'Net')()
+    model.load_state_dict(torch.load(weights))
 
     model.eval()
     model.cuda()
         
-    infer_dataset = voc12.data.VOC12ClsDatasetMSF(args.infer_list, voc12_root=args.voc12_root,
+    infer_dataset = data_SEAM.VOC12ClsDatasetMSF(args.infer_list, voc12_root=args.voc12_root,
                                                   scales=[0.5, 1.0, 1.5, 2.0],
                                                   inter_transform=torchvision.transforms.Compose(
                                                        [np.asarray,
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     for iter, (img_name, img_list, label) in enumerate(infer_data_loader):
         img_name = img_name[0]; label = label[0]
 
-        img_path = voc12.data.get_img_path(img_name, args.voc12_root)
+        img_path = data_SEAM.get_img_path(img_name, args.voc12_root)
         orig_img = np.asarray(Image.open(img_path))
         orig_img_size = orig_img.shape[:2]
 
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         if args.out_cam_pred is not None:
             bg_score = [np.ones_like(norm_cam[0])*args.out_cam_pred_alpha]
             pred = np.argmax(np.concatenate((bg_score, norm_cam)), 0)
-            scipy.misc.imsave(os.path.join(args.out_cam_pred, img_name + '.png'), pred.astype(np.uint8))
+            imageio.imwrite(os.path.join(args.out_cam_pred, img_name + '.png'), pred.astype(np.uint8))
 
         def _crf_with_alpha(cam_dict, alpha):
             v = np.array(list(cam_dict.values()))
