@@ -163,7 +163,7 @@ class VOCSegmentationSEAM(data.Dataset):
         self.images = [(os.path.join(voc_root, x[0][1:]), os.path.join(voc_root, x[1][1:])) for x in file_names]
 
     def getPathList(self):
-        return self.images
+        return self.images, self.transform
 
 
 class VOCSegmentationIncremental(data.Dataset):
@@ -181,6 +181,7 @@ class VOCSegmentationIncremental(data.Dataset):
 
         self.labels = []
         self.labels_old = []
+        
 
         if labels is not None:
             # store the labels
@@ -221,14 +222,14 @@ class VOCSegmentationIncremental(data.Dataset):
                     lambda t: t.apply_(lambda x: self.inverted_order[x] if x in tmp_labels else masking_value))
             else:
                 target_transform = reorder_transform
-
-            # make the subset of the dataset
-            self.dataset = Subset(full_voc, idxs, transform, target_transform)
             
             if SEAM and train:
-                dataset_for_SEAM = VOCSegmentationSEAM(root, 'train', is_aug=True, transform=None).getPathList()
+                dataset_for_SEAM, transform = VOCSegmentationSEAM(root, 'train', is_aug=True, transform=None).getPathList()
                 #dataset_for_SEAM = Subset(dataset_for_SEAM, idxs, transform, target_transform)
 
+                tot_idxs = set([i for i in range(len(dataset_for_SEAM))])
+                not_incr_idxs = tot_idxs - set(idxs)
+                
                 filtered_images = ""
                 for i in idxs:
                     im_tar = dataset_for_SEAM[i]
@@ -238,20 +239,32 @@ class VOCSegmentationIncremental(data.Dataset):
                 
                 SEAM_infer()
                 
-                dataset_paths_SEAM = [(im_tar[0], os.path.join(cam_pred_root, im_tar[1].split("/")[-1])) for im_tar in dataset_for_SEAM]
+                dataset_paths_SEAM_list = []
+                
+                for i, im_tar in enumerate(dataset_for_SEAM):
+                    if i in set(idxs):
+                        dataset_paths_SEAM_list.append((im_tar[0], os.path.join(cam_pred_root, im_tar[1].split("/")[-1])))
+                    else:
+                        dataset_paths_SEAM_list.append((im_tar[0], im_tar[1]))
+                        
                 SEAM_dataset = []
                 
-                for im_tar in dataset_paths_SEAM:
+                for im_tar in dataset_paths_SEAM_list:
                     img = Image.open(im_tar[0]).convert('RGB')
 
                     target = Image.open(im_tar[1])
             
-                    if self.transform is not None:
-                        img, target = self.transform(img, target)
+                    if transform is not None:
+                        img, target = transform(img, target)
 
-                    SEAM_dataset.append(img, target)
-
-            SEAM = False
+                    SEAM_dataset.append((img, target))
+                    
+                self.dataset = SEAM_dataset
+                
+                SEAM = False
+                
+            # make the subset of the dataset
+            self.dataset = Subset(full_voc, idxs, transform, target_transform)
         else:
             self.dataset = full_voc
 
