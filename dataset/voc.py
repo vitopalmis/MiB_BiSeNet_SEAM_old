@@ -9,7 +9,9 @@ from .SEAM.infer_SEAM import SEAM_infer
 
 from PIL import Image
 
+images=[]
 SEAM = True
+first=True
 cam_pred_root = "/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam_pred/"
 
 classes = {
@@ -51,8 +53,13 @@ class VOCSegmentation(data.Dataset):
                  root,
                  image_set='train',
                  is_aug=True,
-                 transform=None):
-
+                 transform=None,
+                 idxs=None):
+        
+        global images
+        global SEAM
+        global first
+        
         self.root = os.path.expanduser(root)
         self.year = "2012"
 
@@ -83,9 +90,35 @@ class VOCSegmentation(data.Dataset):
         # remove leading \n
         with open(os.path.join(split_f), "r") as f:
             file_names = [x[:-1].split(' ') for x in f.readlines()]
+        
+        if SEAM and not first and idxs is not None:
+            tot_idxs = set([i for i in range(len(images))])
+            not_incr_idxs = tot_idxs - set(idxs)
+                
+            filtered_images = ""
+            for i in idxs:
+                im_tar = images[i]
+                filtered_images += im_tar[0] + " " + im_tar[1] + "\n"
+                with open("Incr_data.txt", 'w') as file:
+                    file.write(filtered_images)
+            
+            SEAM_infer()
+            
+            dataset_paths_SEAM_list = []
+           
+            for i, im_tar in enumerate(images):
+                if i in set(idxs):
+                    dataset_paths_SEAM_list.append((im_tar[0], os.path.join(cam_pred_root, im_tar[1].split("/")[-1])))
+                else:
+                    dataset_paths_SEAM_list.append((im_tar[0], im_tar[1]))
+                        
+            self.images = dataset_paths_SEAM_list
 
-        # REMOVE FIRST SLASH OTHERWISE THE JOIN WILL start from root
-        self.images = [(os.path.join(voc_root, x[0][1:]), os.path.join(voc_root, x[1][1:])) for x in file_names]
+        else:
+            first=False
+            # REMOVE FIRST SLASH OTHERWISE THE JOIN WILL start from root
+            self.images = [(os.path.join(voc_root, x[0][1:]), os.path.join(voc_root, x[1][1:])) for x in file_names]
+            images = self.images
 
     def __getitem__(self, index):
         """
@@ -107,60 +140,6 @@ class VOCSegmentation(data.Dataset):
         return len(self.images)
 
 
-class VOCSegmentationSEAM(data.Dataset):
-    """`Pascal VOC <http://host.robots.ox.ac.uk/pascal/VOC/>`_ Segmentation Dataset.
-    Args:
-        root (string): Root directory of the VOC Dataset.
-        image_set (string, optional): Select the image_set to use, ``train``, ``trainval`` or ``val``
-        is_aug (bool, optional): If you want to use the augmented train set or not (default is True)
-        transform (callable, optional): A function/transform that  takes in an PIL image
-            and returns a transformed version. E.g, ``transforms.RandomCrop``
-    """
-
-    def __init__(self,
-                 root,
-                 image_set='train',
-                 is_aug=True,
-                 transform=None):
-
-        self.root = os.path.expanduser(root)
-        self.year = "2012"
-
-        self.transform = transform
-
-        self.image_set = image_set
-        base_dir = "PascalVOC12"
-        voc_root = os.path.join(self.root, base_dir)
-        splits_dir = os.path.join(voc_root, 'splits')
-
-        if not os.path.isdir(voc_root):
-            raise RuntimeError('Dataset not found or corrupted.' +
-                               ' You can use download=True to download it')
-
-        if is_aug and image_set == 'train':
-            mask_dir = os.path.join(voc_root, 'SegmentationClassAug')
-            assert os.path.exists(
-                mask_dir), "SegmentationClassAug not found"
-            split_f = os.path.join(splits_dir, 'train_aug.txt')
-        else:
-            split_f = os.path.join(splits_dir, image_set.rstrip('\n') + '.txt')
-
-        if not os.path.exists(split_f):
-            raise ValueError(
-                'Wrong image_set entered! Please use image_set="train" '
-                'or image_set="trainval" or image_set="val"')
-
-        # remove leading \n
-        with open(os.path.join(split_f), "r") as f:
-            file_names = [x[:-1].split(' ') for x in f.readlines()]
-
-        # REMOVE FIRST SLASH OTHERWISE THE JOIN WILL start from root
-        self.images = [(os.path.join(voc_root, x[0][1:]), os.path.join(voc_root, x[1][1:])) for x in file_names]
-
-    def getPathList(self):
-        return self.images, self.transform
-
-
 class VOCSegmentationIncremental(data.Dataset):
     def __init__(self,
                  root,
@@ -179,6 +158,7 @@ class VOCSegmentationIncremental(data.Dataset):
         
 
         if labels is not None:
+            print("Labels is not None")
             # store the labels
             labels_old = labels_old if labels_old is not None else []
 
@@ -199,7 +179,7 @@ class VOCSegmentationIncremental(data.Dataset):
                 idxs = filter_images(full_voc, labels, labels_old, overlap=overlap)
                 #if idxs_path is not None and distributed.get_rank() == 0:
                 #    np.save(idxs_path, np.array(idxs, dtype=int))
-
+                
             if train:
                 masking_value = 0
             else:
@@ -218,49 +198,11 @@ class VOCSegmentationIncremental(data.Dataset):
             else:
                 target_transform = reorder_transform
             
-            
             if SEAM and train:
-                dataset_for_SEAM, transform = VOCSegmentationSEAM(root, 'train', is_aug=True, transform=None).getPathList()
-                #dataset_for_SEAM = Subset(dataset_for_SEAM, idxs, transform, target_transform)
-
-                tot_idxs = set([i for i in range(len(dataset_for_SEAM))])
-                not_incr_idxs = tot_idxs - set(idxs)
-                
-                filtered_images = ""
-                for i in idxs:
-                    im_tar = dataset_for_SEAM[i]
-                    filtered_images += im_tar[0] + " " + im_tar[1] + "\n"
-                    with open("Incr_data.txt", 'w') as file:
-                        file.write(filtered_images)
-                
-                SEAM_infer()
-                
-                dataset_paths_SEAM_list = []
-                
-                for i, im_tar in enumerate(dataset_for_SEAM):
-                    if i in set(idxs):
-                        dataset_paths_SEAM_list.append((im_tar[0], os.path.join(cam_pred_root, im_tar[1].split("/")[-1])))
-                    else:
-                        dataset_paths_SEAM_list.append((im_tar[0], im_tar[1]))
-                        
-                SEAM_dataset = []
-                
-                for im_tar in dataset_paths_SEAM_list:
-                    img = Image.open(im_tar[0]).convert('RGB')
-
-                    target = Image.open(im_tar[1])
+                full_voc = VOCSegmentation(root, 'train', is_aug=True, transform=None, idxs=idxs)
             
-                    if transform is not None:
-                        img, target = transform(img, target)
-
-                    SEAM_dataset.append((img, target))
-                    
-                self.dataset = Subset(SEAM_dataset, idxs, transform, target_transform)
-                
-                SEAM = False
-            else:
-                # make the subset of the dataset
-                self.dataset = Subset(full_voc, idxs, transform, target_transform)
+            # make the subset of the dataset
+            self.dataset = Subset(full_voc, idxs, transform, target_transform)
                 
         else:
             self.dataset = full_voc
