@@ -1,4 +1,3 @@
-
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -41,7 +40,7 @@ def load_image_label_list_from_xml(img_name_list, voc12_root):
 
 def load_image_label_list_from_npy(img_name_list):
 
-    cls_labels_dict = np.load('voc12/cls_labels.npy', allow_pickle=True).item()
+    cls_labels_dict = np.load('/content/MiB_BiSeNet_SEAM/dataset/SEAM/voc12_SEAM/cls_labels.npy', allow_pickle=True).item()
 
     return [cls_labels_dict[img_name] for img_name in img_name_list]
 
