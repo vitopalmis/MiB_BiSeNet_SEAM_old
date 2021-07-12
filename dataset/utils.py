@@ -39,6 +39,7 @@ def filter_images(dataset, labels, labels_old=None, overlap=True):
             idxs.append(i)
         if i % 1000 == 0:
             print(f"\t{i}/{len(dataset)} ...")
+    
     return idxs
 
 
