@@ -95,14 +95,9 @@ class VOCSegmentation(data.Dataset):
             tuple: (image, target) where target is the image segmentation.
         """
         img = Image.open(self.images[index][0]).convert('RGB')
-        '''
-        if opts.SEAM:
-            target = Image.open(SEAM_infer(self.images[index][0]))
-        else:
-            
-        '''
+        
         target = Image.open(self.images[index][1])
-            
+        
         if self.transform is not None:
             img, target = self.transform(img, target)
 
@@ -223,6 +218,7 @@ class VOCSegmentationIncremental(data.Dataset):
             else:
                 target_transform = reorder_transform
             
+            
             if SEAM and train:
                 dataset_for_SEAM, transform = VOCSegmentationSEAM(root, 'train', is_aug=True, transform=None).getPathList()
                 #dataset_for_SEAM = Subset(dataset_for_SEAM, idxs, transform, target_transform)
@@ -259,12 +255,13 @@ class VOCSegmentationIncremental(data.Dataset):
 
                     SEAM_dataset.append((img, target))
                     
-                self.dataset = SEAM_dataset
+                self.dataset = Subset(SEAM_dataset, idxs, transform, target_transform)
                 
                 SEAM = False
+            else:
+                # make the subset of the dataset
+                self.dataset = Subset(full_voc, idxs, transform, target_transform)
                 
-            # make the subset of the dataset
-            self.dataset = Subset(full_voc, idxs, transform, target_transform)
         else:
             self.dataset = full_voc
 
