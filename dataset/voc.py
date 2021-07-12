@@ -10,7 +10,7 @@ from .SEAM.infer_SEAM import SEAM_infer
 from PIL import Image
 
 SEAM = True
-cam_root = "/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam/"
+cam_pred_root = "/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam_pred/"
 
 classes = {
     0: 'background',
@@ -235,8 +235,23 @@ class VOCSegmentationIncremental(data.Dataset):
                     filtered_images += im_tar[0] + " " + im_tar[1] + "\n"
                     with open("Incr_data.txt", 'w') as file:
                         file.write(filtered_images)
+                
                 SEAM_infer()
-                self.dataset = [(im_tar[0], os.path.join(cam_root, im_tar[1].split("/")[-1])) for im_tar in dataset_for_SEAM]
+                
+                dataset_paths_SEAM = [(im_tar[0], os.path.join(cam_pred_root, im_tar[1].split("/")[-1])) for im_tar in dataset_for_SEAM]
+                SEAM_dataset = []
+                
+                for im_tar in dataset_paths_SEAM:
+                    img = Image.open(im_tar[0]).convert('RGB')
+
+                    target = Image.open(im_tar[1])
+            
+                    if self.transform is not None:
+                        img, target = self.transform(img, target)
+
+                    SEAM_dataset.append(img, target)
+
+            SEAM = False
         else:
             self.dataset = full_voc
 
