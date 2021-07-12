@@ -4,6 +4,7 @@ import tasks
 
 def modify_command_options(opts):
     
+    opts.SEAM = True
     opts.step = 1
     opts.method = "MiB"
     opts.epochs = 30
@@ -209,5 +210,13 @@ def get_argparser():
     parser.add_argument("--step_ckpt", default=None, type=str,
                         help="path to trained model at previous step. Leave it None if you want to use def path")
     parser.add_argument('--opt_level', type=str, choices=['O0', 'O1', 'O2', 'O3'], default='O0')
+
+    # SEAM parameters
+    parser.add_argument('--SEAM', default=False, action='store_true',
+                        help="Enable SEAM pseudo labels generation, instead of the PascalVOC ones")
+    parser.add_argument('--cam_root', type=str, default='/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam/',
+                        help="Enable SEAM pseudo labels generation, instead of the PascalVOC ones")
+    parser.add_argument('--cam_pred_root', type=str, default='/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam_pred/',
+                        help="Enable SEAM pseudo labels generation, instead of the PascalVOC ones")
 
     return parser
