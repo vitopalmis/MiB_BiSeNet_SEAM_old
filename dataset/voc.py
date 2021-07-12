@@ -5,8 +5,12 @@ from torch import distributed
 import torchvision as tv
 import numpy as np
 from .utils import Subset, filter_images, group_images
+from .SEAM.infer_SEAM import SEAM_infer
 
 from PIL import Image
+
+SEAM = True
+cam_root = "/content/MiB_BiSeNet_SEAM/dataset/SEAM/cam/"
 
 classes = {
     0: 'background',
@@ -91,7 +95,14 @@ class VOCSegmentation(data.Dataset):
             tuple: (image, target) where target is the image segmentation.
         """
         img = Image.open(self.images[index][0]).convert('RGB')
+        '''
+        if opts.SEAM:
+            target = Image.open(SEAM_infer(self.images[index][0]))
+        else:
+            
+        '''
         target = Image.open(self.images[index][1])
+            
         if self.transform is not None:
             img, target = self.transform(img, target)
 
@@ -99,6 +110,60 @@ class VOCSegmentation(data.Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+class VOCSegmentationSEAM(data.Dataset):
+    """`Pascal VOC <http://host.robots.ox.ac.uk/pascal/VOC/>`_ Segmentation Dataset.
+    Args:
+        root (string): Root directory of the VOC Dataset.
+        image_set (string, optional): Select the image_set to use, ``train``, ``trainval`` or ``val``
+        is_aug (bool, optional): If you want to use the augmented train set or not (default is True)
+        transform (callable, optional): A function/transform that  takes in an PIL image
+            and returns a transformed version. E.g, ``transforms.RandomCrop``
+    """
+
+    def __init__(self,
+                 root,
+                 image_set='train',
+                 is_aug=True,
+                 transform=None):
+
+        self.root = os.path.expanduser(root)
+        self.year = "2012"
+
+        self.transform = transform
+
+        self.image_set = image_set
+        base_dir = "PascalVOC12"
+        voc_root = os.path.join(self.root, base_dir)
+        splits_dir = os.path.join(voc_root, 'splits')
+
+        if not os.path.isdir(voc_root):
+            raise RuntimeError('Dataset not found or corrupted.' +
+                               ' You can use download=True to download it')
+
+        if is_aug and image_set == 'train':
+            mask_dir = os.path.join(voc_root, 'SegmentationClassAug')
+            assert os.path.exists(
+                mask_dir), "SegmentationClassAug not found"
+            split_f = os.path.join(splits_dir, 'train_aug.txt')
+        else:
+            split_f = os.path.join(splits_dir, image_set.rstrip('\n') + '.txt')
+
+        if not os.path.exists(split_f):
+            raise ValueError(
+                'Wrong image_set entered! Please use image_set="train" '
+                'or image_set="trainval" or image_set="val"')
+
+        # remove leading \n
+        with open(os.path.join(split_f), "r") as f:
+            file_names = [x[:-1].split(' ') for x in f.readlines()]
+
+        # REMOVE FIRST SLASH OTHERWISE THE JOIN WILL start from root
+        self.images = [(os.path.join(voc_root, x[0][1:]), os.path.join(voc_root, x[1][1:])) for x in file_names]
+
+    def getPathList(self):
+        return self.images
 
 
 class VOCSegmentationIncremental(data.Dataset):
@@ -159,6 +224,19 @@ class VOCSegmentationIncremental(data.Dataset):
 
             # make the subset of the dataset
             self.dataset = Subset(full_voc, idxs, transform, target_transform)
+            
+            if SEAM and train:
+                dataset_for_SEAM = VOCSegmentationSEAM(root, 'train', is_aug=True, transform=None).getPathList()
+                #dataset_for_SEAM = Subset(dataset_for_SEAM, idxs, transform, target_transform)
+
+                filtered_images = ""
+                for i in idxs:
+                    im_tar = dataset_for_SEAM[i]
+                    filtered_images += im_tar[0] + " " + im_tar[1] + "\n"
+                    with open("Incr_data.txt", 'w') as file:
+                        file.write(filtered_images)
+                SEAM_infer()
+                self.dataset = [(im_tar[0], os.path.join(cam_root, im_tar[1].split("/")[-1])) for im_tar in dataset_for_SEAM]
         else:
             self.dataset = full_voc
 
